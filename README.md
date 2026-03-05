@@ -24,6 +24,9 @@ Il focus di questo algoritmo è sicuramente la costruzione dei quad-tree.
     Since b and c may still end up in the same quadrant, there may be several subdivisions during a single insertion.
     Finally, update the center-of-mass and total mass of x.
 
+
+from: https://arborjs.org/docs/barnes-hut
+
 ```
 
 ![](https://jorellano.github.io/img/barnes%20hut.jpg)
