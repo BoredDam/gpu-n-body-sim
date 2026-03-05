@@ -33,3 +33,8 @@ from: https://arborjs.org/docs/barnes-hut
 
 Il risultato di questo algoritmo ricorsivo, è un albero in cui ogni nodo contiene al più una particella. Ogni nodo contiene la massa e il centro di massa della regione assegnata. Questo permette, durante il calcolo delle forze che agiscono su una particella, di approssimare regioni più lontane a corpi unici, riducendo la complessità della simulazione a $\mathcal{O}(n\log n)$. Una complessità che ci permette di spingere il numero di particelle della simulazione a valori molto più grandi. Non è un algoritmo imbarazzantemente parallelizzabile, ed è quindi un ottimo caso studio.
 
+## Compilare
+
+```b
+gcc -l OpenCL software.c -o software
+```
