@@ -38,3 +38,7 @@ Il risultato di questo algoritmo ricorsivo, è un albero in cui ogni nodo contie
 ```b
 gcc -l OpenCL software.c -o software
 ```
+
+## Visualizzazione
+
+Per visualizzare i risultati, andremo a usare il software open source [ParaView](https://www.paraview.org/).
