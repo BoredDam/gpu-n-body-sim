@@ -27,7 +27,7 @@
 #define DELTA_TIME 0.2
 #define G 0.05
 
-#define CENTER_DISTANCE 20
+#define CENTER_DISTANCE 10
 
 
 double *init_bodies_demo(const int count) {
@@ -56,6 +56,24 @@ double *init_bodies_demo(const int count) {
     return bodies;
 }
 
+double *init_bodies_demo_1(const int count) {
+    /*
+    inits a galaxy-like particle system
+    */
+    double *bodies = calloc(count * COMPONENTS, sizeof(double));
+
+    for (int i = 0; i < count; i++) {
+        bodies[i * COMPONENTS + MASS] = 1.0 + rand() % 50;
+        bodies[i * COMPONENTS + POS_X] = cos(rand() % 360) * (CENTER_DISTANCE + rand() % 100) ;
+        bodies[i * COMPONENTS + POS_Y] = sin(rand() % 360) * (CENTER_DISTANCE + rand() % 100);
+        bodies[i * COMPONENTS + POS_Z] = -sin(rand() % 360) * (CENTER_DISTANCE) + rand() % 100;
+        bodies[i * COMPONENTS + VEL_X] = cos(rand() % 360) * 1;
+        bodies[i * COMPONENTS + VEL_Y] = sin(rand() % 360) * 1;
+    }
+    
+    return bodies;
+}
+
 
 double *init_force_buffer(const int count) {
     double *bodies = (double*) calloc(count, sizeof(double) * DIMENSIONS);
@@ -72,7 +90,7 @@ void write_frame_on_disk(const int count, const double *bodies, const int time) 
     */
     FILE *fptr;
     char file_name[512];
-    sprintf(file_name, "./outputs/simulation_frame_%d.csv", time);
+    sprintf(file_name, "./outputs/sim2/simulation_frame_%d.csv", time);
     fptr = fopen(file_name, "w+");
 
     fprintf(fptr, "x,y,z\n");
@@ -160,7 +178,7 @@ int main(int argc, char *argv[]) {
     }
 
     size_t body_count = atoi(argv[1]);
-    double *bodies = init_bodies_demo(body_count);
+    double *bodies = init_bodies_demo_1(body_count);
     if (bodies == NULL) {
         printf("particle initialization failed\n");
         return EXIT_FAILURE;
@@ -170,5 +188,6 @@ int main(int argc, char *argv[]) {
 
     simulation(bodies, body_count, iterations);
     free(bodies);
+    
     return EXIT_SUCCESS;
 }
