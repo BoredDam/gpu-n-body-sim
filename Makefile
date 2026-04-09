@@ -1,7 +1,7 @@
-all: serial
+all: naive_parallel
 
-serial: ./src/serial.c
-	gcc ./src/serial.c -lOpenCL -lm -O2 -o serial.out
+serial: ./n-body-sim/src/naive_parallel.c
+	gcc ./n-body-sim/src/naive_parallel.c -lOpenCL -lm -o naive_parallel.out
 	
 clean:
-	rm ./src/serial.c
+	rm ./n-body-sim/src/naive_parallel.c
