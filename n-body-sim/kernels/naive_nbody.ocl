@@ -1,0 +1,47 @@
+#define MINIMUM_DISTANCE 5
+#define DELTA_TIME 0.2f
+#define G 0.05f
+
+kernel void update_force(global float8 *bodies, global float3 *forces, int body_count) {
+
+    int id = get_global_id(0);
+    
+    if (id >= body_count) {
+        return;
+    }
+
+    float this_mass = bodies[id].s7; 
+    float3 this_pos = bodies[id].s123;
+
+    float3 dist_vec;
+    float dist;
+    float attraction;
+
+    float3 force_buffer;
+    float3 other_pos;
+
+    for (int i = 0; i < body_count; i++) {
+        other_pos = bodies[i].s123;
+        dist_vec = this_pos - other_pos;
+        dist = fmax(fast_distance(this_pos, other_pos), MINIMUM_DISTANCE);
+        attraction = G * (bodies[i].s7 * this_mass) / (dist * dist);
+        force_buffer += attraction * (dist_vec / dist);
+    }
+
+    forces[id] = force_buffer;
+
+}
+
+
+kernel void update_pos(global float8 *bodies, global float3 *forces, int body_count) {
+    
+    int id = get_global_id(0);
+
+    if (id >= body_count) {
+        return;
+    }
+
+    bodies[id].s456 += (forces[id] / bodies[id].s7) * DELTA_TIME;
+    bodies[id].s123 += bodies[id].s456 * DELTA_TIME;
+}
+

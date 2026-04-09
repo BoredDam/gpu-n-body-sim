@@ -163,7 +163,7 @@ void simulation(double *bodies, size_t body_count, size_t iterations) {
         update_force(body_count, force_buffer, bodies);
         update_vel(body_count, force_buffer, bodies, DELTA_TIME);
         reset_force(body_count, force_buffer);
-        write_frame_on_disk(body_count, bodies, t);
+        //write_frame_on_disk(body_count, bodies, t);
     }
     free(force_buffer);
 }
