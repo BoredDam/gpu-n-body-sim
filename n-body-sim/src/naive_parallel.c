@@ -5,7 +5,62 @@
 #include <time.h>
 #include "../headers/ocl_boiler.h"
 
-cl_event update_force(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_mem forces, unsigned int body_count) {
+
+#define CENTER_DISTANCE 10
+
+void *init_bodies_demo(cl_float8 *bodies, unsigned int body_count) {
+    
+    /*inits a galaxy-like particle system*/
+    bodies[0].s0 = 0;
+    bodies[0].s1 = 0;
+    bodies[0].s2 = 0;
+    bodies[0].s3 = 0;
+    bodies[0].s4 = 0;
+    bodies[0].s5 = 0;
+    bodies[0].s6 = 0;
+    bodies[0].s7 = 10000;
+
+    for (int i = 1; i < body_count; i++) {  
+        bodies[i].s0 = 0;
+        bodies[i].s1 = cos(i) * (CENTER_DISTANCE + rand() % 3 - 3);
+        bodies[i].s2 = sin(i) * (CENTER_DISTANCE + rand() % 3 - 3);
+        bodies[i].s3 = rand() % 8 - 4;
+        bodies[i].s4 = -sin(i) * 4.5;
+        bodies[i].s5 = cos(i) * 4.5;
+        bodies[i].s6 = 0;
+        bodies[i].s7 = 1.0;
+    }
+    
+    return bodies;
+}
+
+
+cl_event update_force_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_mem forces, unsigned int body_count) {
+    cl_event event;
+    const size_t gws[1]= { round_mul_up(body_count, 32) };
+    cl_int err;
+    cl_uint arg_index = 0;
+
+    err = clSetKernelArg(k, arg_index, sizeof(bodies), &bodies);
+    ocl_check(err,"clSetKernelArg 0");
+    arg_index++;
+    
+    err = clSetKernelArg(k, arg_index, sizeof(forces), &forces);
+    ocl_check(err,"clSetKernelArg 1");
+    arg_index++;
+
+    err = clSetKernelArg(k, arg_index, sizeof(body_count), &body_count);
+    ocl_check(err,"clSetKernelArg 2");
+    arg_index++;
+
+    cl_int error = clEnqueueNDRangeKernel(que, k, 1, NULL, gws, NULL, 0, NULL, &event);
+    ocl_check(error, "clEnqueueNDRangeKernel");
+
+    return event;
+}
+
+
+cl_event update_pos_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_mem forces, unsigned int body_count) {
     cl_event event;
     const size_t gws[1]= { round_mul_up(body_count, 32) };
     cl_int err;
