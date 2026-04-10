@@ -85,6 +85,25 @@ cl_event update_pos_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_m
 }
 
 
+void write_frame_on_disk(const int count, const cl_float8 *bodies, const int time) {
+    /* 
+    this function is SHIT.
+    it does work, but its just too much overhead...
+    gotta find a smarter way to handle 
+    output file creation :')
+    */
+    FILE *fptr;
+    char file_name[512];
+    sprintf(file_name, "./outputs/sim4_test/simulation_frame_%d.csv", time);
+    fptr = fopen(file_name, "w+");
+
+    fprintf(fptr, "x,y,z\n");
+    for (int i = 0; i < count; i++) {
+        fprintf(fptr, "%f,%f,%f\n", bodies[i].s1, bodies[i].s2, bodies[i].s3);
+    }
+    fclose(fptr); 
+}
+
 int main(int argc, char *argv[]) {
     
     /*error handling*/
@@ -96,6 +115,12 @@ int main(int argc, char *argv[]) {
     unsigned int body_count = atoi(argv[1]);
     if (body_count <= 0) {
         printf("body count must be at least 1\n");
+        return EXIT_FAILURE;
+    }
+
+    unsigned int iterations = atoi(argv[2]);
+    if (iterations <= 0) {
+        printf("iterations must be at least 1\n");
         return EXIT_FAILURE;
     }
 
@@ -113,10 +138,18 @@ int main(int argc, char *argv[]) {
     ocl_check(err, "clCreateKernel failed on update_pos");
 
     size_t body_buffer_size = sizeof(cl_float8) * body_count;
-    void *bodies = malloc(body_buffer_size);
+    cl_float8 *bodies = malloc(body_buffer_size);
     if (!bodies) {
         return EXIT_FAILURE;
     }
+
+    bodies = init_bodies_demo(bodies, body_count);
+    
+    /*testing purpose
+    for (int i = 0; i < body_count; i++) {
+        printf("%f %f %f\n", bodies[i].s1, bodies[i].s2, bodies[i].s3);
+    }
+    */
 
     cl_mem body_vec = clCreateBuffer(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, body_buffer_size, bodies, &err);
     ocl_check(err, "clCreateBuffer failed on body_buffer");
@@ -133,7 +166,25 @@ int main(int argc, char *argv[]) {
 
     clWaitForEvents(1, &fill_buffer);
 
-    cl_event update_force_event;
+    cl_event update_force_event, update_pos_event;
     
-    update_force_event = update_force(que, update_force_k, body_vec, forces, body_count);
+    for (int i = 0; i < iterations; i++) {
+        update_force_event = update_force_run_k(que, update_force_k, body_vec, forces, body_count);
+        clWaitForEvents(1, &update_force_event);
+        
+        update_pos_event = update_pos_run_k(que, update_pos_k, body_vec, forces, body_count);
+        clWaitForEvents(1, &update_pos_event);
+        
+        cl_event enqueue_read_buffer_event;
+        err = clEnqueueReadBuffer(que, body_vec, CL_TRUE, 0, body_buffer_size, bodies, 0, NULL, &enqueue_read_buffer_event);
+        ocl_check(err, "readBUfferEvent failed");
+
+        write_frame_on_disk(body_count, bodies, i);
+    }
+
+    /*testing purpose*/
+    for (int i = 0; i < 100; i++) {
+        printf("%f %f %f\n", bodies[i].s1, bodies[i].s2, bodies[i].s3);
+    }
+    
 }
