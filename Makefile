@@ -1,6 +1,6 @@
 all: naive_parallel
 
-serial: ./n-body-sim/src/naive_parallel.c
+naive_parallel: ./n-body-sim/src/naive_parallel.c
 	gcc ./n-body-sim/src/naive_parallel.c -lOpenCL -lm -o naive_parallel.out
 	
 clean:
