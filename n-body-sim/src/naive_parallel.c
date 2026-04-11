@@ -1,38 +1,9 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include <time.h>
 #include "../headers/ocl_boiler.h"
+#include "../headers/n-body-init.h"
 
 
 #define CENTER_DISTANCE 10
-
-void *init_bodies_demo(cl_float8 *bodies, unsigned int body_count) {
-    
-    /*inits a galaxy-like particle system*/
-    bodies[0].s0 = 0;
-    bodies[0].s1 = 0;
-    bodies[0].s2 = 0;
-    bodies[0].s3 = 0;
-    bodies[0].s4 = 0;
-    bodies[0].s5 = 0;
-    bodies[0].s6 = 0;
-    bodies[0].s7 = 10000;
-
-    for (int i = 1; i < body_count; i++) {  
-        bodies[i].s0 = 0;
-        bodies[i].s1 = cos(i) * (CENTER_DISTANCE + rand() % 3 - 3);
-        bodies[i].s2 = sin(i) * (CENTER_DISTANCE + rand() % 3 - 3);
-        bodies[i].s3 = rand() % 8 - 4;
-        bodies[i].s4 = -sin(i) * 4.5;
-        bodies[i].s5 = cos(i) * 4.5;
-        bodies[i].s6 = 0;
-        bodies[i].s7 = 1.0;
-    }
-    
-    return bodies;
-}
+#define SEED 42
 
 
 cl_event update_force_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_mem forces, unsigned int body_count) {
@@ -104,9 +75,9 @@ void write_frame_on_disk(const int count, const cl_float8 *bodies, const int tim
     fclose(fptr); 
 }
 
+
 int main(int argc, char *argv[]) {
     
-    /*error handling*/
     if (argc < 3) {
         printf("correct usage: %s, [body count], [iterations]\n", argv[0]);
         return EXIT_FAILURE;
@@ -124,12 +95,14 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
+
     cl_platform_id p = select_platform();
 	cl_device_id d = select_device(p);
 	cl_context ctx = create_context(p, d);
 	cl_command_queue que = create_queue(ctx, d);
 	cl_program prog = create_program("./n-body-sim/kernels/naive_nbody.ocl", ctx, d);
 
+    
     cl_int err;
     cl_kernel update_force_k = clCreateKernel(prog, "update_force", &err);
     ocl_check(err, "clCreateKernel failed on update_force");
@@ -143,13 +116,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    bodies = init_bodies_demo(bodies, body_count);
-    
-    /*testing purpose
-    for (int i = 0; i < body_count; i++) {
-        printf("%f %f %f\n", bodies[i].s1, bodies[i].s2, bodies[i].s3);
-    }
-    */
+    bodies = init_bodies_demo(bodies, body_count, CENTER_DISTANCE, SEED);
 
     cl_mem body_vec = clCreateBuffer(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, body_buffer_size, bodies, &err);
     ocl_check(err, "clCreateBuffer failed on body_buffer");
