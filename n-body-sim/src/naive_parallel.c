@@ -1,7 +1,7 @@
 #include "../headers/ocl_boiler.h"
 #include "../headers/n-body-init.h"
 
-
+#define DELTA_TIME 0.02f
 #define CENTER_DISTANCE 10
 #define SEED 42
 
@@ -31,7 +31,36 @@ cl_event update_force_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl
 }
 
 
-cl_event update_pos_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_mem forces, unsigned int body_count) {
+cl_event update_pos_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_mem forces, unsigned int body_count, cl_float delta_time) {
+    cl_event event;
+    const size_t gws[1]= { round_mul_up(body_count, 32) };
+    cl_int err;
+    cl_uint arg_index = 0;
+
+    err = clSetKernelArg(k, arg_index, sizeof(bodies), &bodies);
+    ocl_check(err,"clSetKernelArg update_pos 0");
+    arg_index++;
+    
+    err = clSetKernelArg(k, arg_index, sizeof(forces), &forces);
+    ocl_check(err,"clSetKernelArg update_pos 1");
+    arg_index++;
+
+    err = clSetKernelArg(k, arg_index, sizeof(body_count), &body_count);
+    ocl_check(err,"clSetKernelArg update_pos 2");
+    arg_index++;
+
+    err = clSetKernelArg(k, arg_index, sizeof(delta_time), &delta_time);
+    ocl_check(err,"clSetKernelArg update_pos 3");
+    arg_index++;
+
+    cl_int error = clEnqueueNDRangeKernel(que, k, 1, NULL, gws, NULL, 0, NULL, &event);
+    ocl_check(error, "clEnqueueNDRangeKernel");
+
+    return event;
+}
+
+
+cl_event update_vel_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_mem forces, unsigned int body_count, cl_float delta_time) {
     cl_event event;
     const size_t gws[1]= { round_mul_up(body_count, 32) };
     cl_int err;
@@ -47,6 +76,10 @@ cl_event update_pos_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_m
 
     err = clSetKernelArg(k, arg_index, sizeof(body_count), &body_count);
     ocl_check(err,"clSetKernelArg 2");
+    arg_index++;
+
+    err = clSetKernelArg(k, arg_index, sizeof(delta_time), &delta_time);
+    ocl_check(err,"clSetKernelArg 3");
     arg_index++;
 
     cl_int error = clEnqueueNDRangeKernel(que, k, 1, NULL, gws, NULL, 0, NULL, &event);
@@ -95,7 +128,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-
+    /*openCL shenanigans*/
     cl_platform_id p = select_platform();
 	cl_device_id d = select_device(p);
 	cl_context ctx = create_context(p, d);
@@ -110,13 +143,16 @@ int main(int argc, char *argv[]) {
     cl_kernel update_pos_k = clCreateKernel(prog, "update_pos", &err);
     ocl_check(err, "clCreateKernel failed on update_pos");
 
+    cl_kernel update_vel_k = clCreateKernel(prog, "update_vel", &err);
+    ocl_check(err, "clCreateKernel failed on update_vel");
+
     size_t body_buffer_size = sizeof(cl_float8) * body_count;
     cl_float8 *bodies = malloc(body_buffer_size);
     if (!bodies) {
         return EXIT_FAILURE;
     }
 
-    bodies = init_bodies_demo(bodies, body_count, CENTER_DISTANCE, SEED);
+    bodies = init_bodies_two_colliding_galaxies(bodies, body_count, SEED);
 
     cl_mem body_vec = clCreateBuffer(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, body_buffer_size, bodies, &err);
     ocl_check(err, "clCreateBuffer failed on body_buffer");
@@ -133,15 +169,24 @@ int main(int argc, char *argv[]) {
 
     clWaitForEvents(1, &fill_buffer);
 
-    cl_event update_force_event, update_pos_event;
-    
+    cl_event update_force_event, update_pos_event, update_vel_event;
+
+    update_force_event = update_force_run_k(que, update_force_k, body_vec, forces, body_count);
+    clWaitForEvents(1, &update_force_event);
+
+    update_vel_event = update_vel_run_k(que, update_vel_k, body_vec, forces, body_count, (cl_float) DELTA_TIME / 2);
+    clWaitForEvents(1, &update_force_event);
+
     for (int i = 0; i < iterations; i++) {
+        update_pos_event = update_pos_run_k(que, update_pos_k, body_vec, forces, body_count, (cl_float) DELTA_TIME);
+        clWaitForEvents(1, &update_pos_event);
+
         update_force_event = update_force_run_k(que, update_force_k, body_vec, forces, body_count);
         clWaitForEvents(1, &update_force_event);
-        
-        update_pos_event = update_pos_run_k(que, update_pos_k, body_vec, forces, body_count);
-        clWaitForEvents(1, &update_pos_event);
-        
+
+        update_vel_event = update_vel_run_k(que, update_vel_k, body_vec, forces, body_count, (cl_float) DELTA_TIME);
+        clWaitForEvents(1, &update_force_event);
+
         cl_event enqueue_read_buffer_event;
         err = clEnqueueReadBuffer(que, body_vec, CL_TRUE, 0, body_buffer_size, bodies, 0, NULL, &enqueue_read_buffer_event);
         ocl_check(err, "readBUfferEvent failed");
