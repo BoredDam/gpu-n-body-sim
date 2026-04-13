@@ -24,10 +24,10 @@ int main(int argc, char *argv[])
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
-#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <CL/cl.h>
 #endif
 
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -222,12 +222,36 @@ cl_ulong runtime_ns(cl_event evt)
 	return (end - start);
 }
 
+cl_ulong total_runtime_ns(cl_event from, cl_event to)
+{
+	cl_int err;
+	cl_ulong start, end;
+	err = clGetEventProfilingInfo(from, CL_PROFILING_COMMAND_START,
+		sizeof(start), &start, NULL);
+	ocl_check(err, "get start");
+	err = clGetEventProfilingInfo(to, CL_PROFILING_COMMAND_END,
+		sizeof(end), &end, NULL);
+	ocl_check(err, "get end");
+	return (end - start);
+}
+
+
 // Runtime of an event, in milliseconds
 double runtime_ms(cl_event evt)
 {
 	return runtime_ns(evt)*1.0e-6;
 }
 
+double total_runtime_ms(cl_event from, cl_event to)
+{
+	return total_runtime_ns(from, to)*1.0e-6;
+}
+
+/* divide gws by lws rounding up */
+size_t round_div_up(size_t gws, size_t lws)
+{
+	return ((gws + lws - 1)/lws);
+}
 
 /* round gws to the next multiple of lws */
 size_t round_mul_up(size_t gws, size_t lws)
