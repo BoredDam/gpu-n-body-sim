@@ -1,6 +1,8 @@
 # gpu-n-body-sim
 Implementazione parallela su GPU (OpenCL) di algoritmi (esatti e approssimati) per simulazioni a $n$-corpi (a due dimensioni).
 
+[![Un esempio :)](https://img.youtube.com/vi/wgLvbyDuPDM/maxresdefault.jpg)](https://youtu.be/wgLvbyDuPDM)
+
 ## Algoritmo Naive
 Noto anche come approccio "brute-force", calcola le interazioni di ciascuna particella con tutte le altre coinvolte nella simulazione, ottenendo una complessità pari a $\mathcal{O}(n^2)$. 
 
