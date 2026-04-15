@@ -1,5 +1,4 @@
 #define EPSILON 5
-#define DELTA_TIME 0.01f
 #define G 0.2f
 
 
