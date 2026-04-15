@@ -1,0 +1,62 @@
+#define EPSILON 5
+#define G 0.2f
+#define MAX_DEPTH 16
+
+kernel void bounding_box(global float8 *bodies, int chuck_size, int body_count) {
+    int id = get_global_id(0);
+
+    if (id >= body_count) {
+        return;
+    }
+
+    
+}
+
+
+kernel void set_tree_pos(global float8 *bodies, global unsigned int *codes, int body_count, float min, float max) {
+
+    int id = get_global_id(0);
+
+    if (id >= body_count) {
+        return;
+    }   
+
+    float3 this_pos = bodies[id].s123;
+    
+    float3 min_range, max_range, center;
+
+    unsigned int xbit, ybit, zbit, new_code;
+    new_code = 0;
+
+    for (long int i = 0; i < MAX_DEPTH; i++) {
+        
+        center = (max_range + min_range) * 0.5f;
+        xbit = (this_pos.x >= center.x);
+        ybit = (this_pos.y >= center.y);
+        zbit = (this_pos.z >= center.z);
+
+        if (xbit) {
+            min_range.x = center.x;
+        } else {
+            max_range.x = center.x;
+        }
+
+        if (ybit) {
+            min_range.y = center.y;
+        } else {
+            max_range.y = center.y;
+        }
+
+        if (zbit) {
+            min_range.z = center.z;
+        } else {
+            max_range.z = center.z;
+        }
+
+        new_code = (new_code << 3) | (xbit + 2 * ybit + 4 * zbit);
+    }
+
+    codes[id] = new_code;
+    
+}
+
