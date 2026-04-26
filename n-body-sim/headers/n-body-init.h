@@ -35,11 +35,11 @@ void *init_bodies_two_colliding_galaxies(cl_float8 *bodies, unsigned int body_co
     const float g2_cz = 0.0f;
 
     /* bulk velocities: moving toward each other */
-    const float g1_vx =  1.2f;
+    const float g1_vx =  2.2f;
     const float g1_vy =  0.15f;
     const float g1_vz =  0.0f;
 
-    const float g2_vx = -1.2f;
+    const float g2_vx = -2.2f;
     const float g2_vy = -0.15f;
     const float g2_vz =  0.0f;
 
@@ -48,7 +48,7 @@ void *init_bodies_two_colliding_galaxies(cl_float8 *bodies, unsigned int body_co
     const float core_mass_2 = 8000.0f;
 
     /* disk parameters */
-    const float r_min = 8.0f;
+    const float r_min = 10.0f;
     const float r_max = 28.0f;
     const float z_spread = 1.5f;
 
