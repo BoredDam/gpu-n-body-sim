@@ -2,14 +2,13 @@
 #define G 0.2f
 #define MAX_DEPTH 16
 
-kernel void bounding_box(global float8 *bodies, int chuck_size, int body_count) {
+kernel void bounding_box(global float8 *bodies, global float3 *partial_min, global float3 *partial_max, global float3 *local_min, global float3 *local_max, const unsigned int body_count) {
     int id = get_global_id(0);
-
+    int lid = get_local_id(0);
     if (id >= body_count) {
         return;
     }
 
-    
 }
 
 
