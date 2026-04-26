@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
-
+#include <CL/cl.h>
 
 
 /*constants for array indexing*/

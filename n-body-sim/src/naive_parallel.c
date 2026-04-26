@@ -1,5 +1,7 @@
 #include "../headers/ocl_boiler.h"
+#include "../headers/sim-utils.h"
 #include "../headers/n-body-init.h"
+#include <sys/stat.h>
 
 #define DELTA_TIME 0.02f
 #define CENTER_DISTANCE 10
@@ -89,30 +91,13 @@ cl_event update_vel_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_m
 }
 
 
-void write_frame_on_disk(const int count, const cl_float8 *bodies, const int time) {
-    /* 
-    this function is SHIT.
-    it does work, but its just too much overhead...
-    gotta find a smarter way to handle 
-    output file creation :')
-    */
-    FILE *fptr;
-    char file_name[512];
-    sprintf(file_name, "./outputs/sim4_test/simulation_frame_%d.csv", time);
-    fptr = fopen(file_name, "w+");
 
-    fprintf(fptr, "x,y,z\n");
-    for (int i = 0; i < count; i++) {
-        fprintf(fptr, "%f,%f,%f\n", bodies[i].s1, bodies[i].s2, bodies[i].s3);
-    }
-    fclose(fptr); 
-}
 
 
 int main(int argc, char *argv[]) {
     
-    if (argc < 3) {
-        printf("correct usage: %s, [body count], [iterations]\n", argv[0]);
+    if (argc < 4) {
+        printf("correct usage: %s, [body count], [iterations], [simulation-name]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -128,13 +113,13 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
+    char *sim_name = argv[3];
     /*openCL shenanigans*/
     cl_platform_id p = select_platform();
 	cl_device_id d = select_device(p);
 	cl_context ctx = create_context(p, d);
 	cl_command_queue que = create_queue(ctx, d);
 	cl_program prog = create_program("./n-body-sim/kernels/naive_nbody.ocl", ctx, d);
-
     
     cl_int err;
     cl_kernel update_force_k = clCreateKernel(prog, "update_force", &err);
@@ -178,6 +163,9 @@ int main(int argc, char *argv[]) {
     clWaitForEvents(1, update_vel_event);
 
     cl_event enqueue_map_buffer_event;
+    char path_name[1024] = "./outputs/";
+    strcat(path_name, sim_name);
+    mkdir(path_name, S_IRWXU | S_IRWXG | S_IRWXO);
 
     for (int i = 0; i < iterations; i++) {
         update_pos_event[i] = update_pos_run_k(que, update_pos_k, body_vec, forces, body_count, (cl_float) DELTA_TIME);
@@ -193,7 +181,7 @@ int main(int argc, char *argv[]) {
         bodies = clEnqueueMapBuffer(que, body_vec, CL_TRUE, CL_MAP_READ, 0, body_buffer_size, 0, NULL, &enqueue_map_buffer_event, &err);
         ocl_check(err, "enqueueMapBufferEvent failed");
 
-        write_frame_on_disk(body_count, bodies, i);
+        write_frame_on_disk(body_count, bodies, sim_name, i);
 
         cl_event enqueue_unmap_event;
         err = clEnqueueUnmapMemObject(que, body_vec, bodies, 0, NULL, &enqueue_unmap_event);
