@@ -91,9 +91,6 @@ cl_event update_vel_run_k(cl_command_queue que, cl_kernel k, cl_mem bodies, cl_m
 }
 
 
-
-
-
 int main(int argc, char *argv[]) {
     
     if (argc < 4) {
@@ -165,7 +162,7 @@ int main(int argc, char *argv[]) {
     cl_event enqueue_map_buffer_event;
     char path_name[1024] = "./outputs/";
     strcat(path_name, sim_name);
-    mkdir(path_name, S_IRWXU | S_IRWXG | S_IRWXO);
+    mkdir(path_name, S_IRWXU);
 
     for (int i = 0; i < iterations; i++) {
         update_pos_event[i] = update_pos_run_k(que, update_pos_k, body_vec, forces, body_count, (cl_float) DELTA_TIME);

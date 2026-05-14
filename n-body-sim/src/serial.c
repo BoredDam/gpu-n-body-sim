@@ -74,7 +74,6 @@ double *init_bodies_demo_1(const int count) {
     return bodies;
 }
 
-
 double *init_force_buffer(const int count) {
     double *bodies = (double*) calloc(count, sizeof(double) * DIMENSIONS);
     return bodies;
