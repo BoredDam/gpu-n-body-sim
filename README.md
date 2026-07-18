@@ -1,5 +1,5 @@
 # gpu-n-body-sim
-Implementazione parallela su GPU (OpenCL) di algoritmi (esatti e approssimati) per simulazioni a $n$-corpi (a due dimensioni).
+Implementazione parallela su GPU (OpenCL) di algoritmi (esatti e approssimati) per simulazioni a $n$-corpi.
 
 [![Un esempio :)](https://img.youtube.com/vi/wgLvbyDuPDM/maxresdefault.jpg)](https://youtu.be/wgLvbyDuPDM)
 
